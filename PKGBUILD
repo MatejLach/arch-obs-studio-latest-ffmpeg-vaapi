@@ -5,7 +5,7 @@
 
 pkgname=obs-studio
 pkgrel=1
-pkgver=21.0.2_2_gf0f0d2c8
+pkgver=21.1.1_2_g0dc9151d
 pkgdesc="Free and open source software for video recording and live streaming."
 arch=("i686" "x86_64")
 url="https://github.com/jp9000/obs-studio"
@@ -31,8 +31,8 @@ pkgver() {
 
 prepare() {
   cd $pkgname
-  #latesttag=$(git describe --tags)
-  #git checkout $latesttag
+  latesttag=$(git describe --tags)
+  git checkout $latesttag
   git submodule init
   git config submodule.plugins/obs-outputs/ftl-sdk.url $srcdir/ftl-sdk
   git submodule update
