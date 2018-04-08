@@ -27,7 +27,7 @@ new file mode 100644
 index 00000000..c46967fd
 --- /dev/null
 +++ b/plugins/obs-ffmpeg/obs-ffmpeg-vaapi.c
-@@ -0,0 +1,669 @@
+@@ -0,0 +1,670 @@
 +/******************************************************************************
 +    Copyright (C) 2016 by Hugh Bailey <obs.jim@gmail.com>
 +
@@ -123,13 +123,11 @@ index 00000000..c46967fd
 +	info->format = pref_format;
 +}
 +
-+static bool vaapi_init_codec(struct vaapi_encoder *enc)
++static bool vaapi_init_codec(struct vaapi_encoder *enc, const char *path)
 +{
 +	int ret;
 +
-+
-+
-+	ret = av_hwdevice_ctx_create(&enc->vadevice_ref, AV_HWDEVICE_TYPE_VAAPI, "/dev/dri/renderD128", NULL, 0);
++	ret = av_hwdevice_ctx_create(&enc->vadevice_ref, AV_HWDEVICE_TYPE_VAAPI, path, NULL, 0);
 +	if (ret < 0) {
 +		warn("Failed to create VAAPI device context: %s", av_err2str(ret));
 +		return false;
@@ -194,6 +192,8 @@ index 00000000..c46967fd
 +{
 +	struct vaapi_encoder *enc = data;
 +
++	const char *device = obs_data_get_string(settings, "vaapi_device");
++
 +	int codec = (int)obs_data_get_string(settings, "vaapi_codec");
 +
 +	int profile = (int)obs_data_get_int(settings, "profile");
@@ -249,9 +249,9 @@ index 00000000..c46967fd
 +	/* for h.264, 1080 isn't devisable by 16, so we must lower */
 +	/* height to prevent green or black bars */
 +
-+	if(enc->context->height == 1080 && codec==AV_CODEC_ID_H264) {
++	/*if(enc->context->height == 1080 && codec==AV_CODEC_ID_H264) {
 +		enc->context->height = 1072;
-+	}
++	}*/
 +
 +	enc->context->time_base = (AVRational){voi->fps_den, voi->fps_num};
 +	enc->context->pix_fmt = obs_to_ffmpeg_video_format(info.format);
@@ -269,6 +269,7 @@ index 00000000..c46967fd
 +	enc->height = enc->context->height;
 +
 +	info("settings:\n"
++	     "\tdevice:           %s\n"
 +	     "\tqp:           %d\n"
 +	     "\tquality:      %d\n"
 +	     "\tprofile:      %d\n"
@@ -280,12 +281,12 @@ index 00000000..c46967fd
 +	     "\tb-frames:     %d\n"
 +	     "\tloop-filter-level:     %d\n"
 +	     "\tloop-filter-sharpness:     %d\n",
-+             qp, quality, profile, level,
++             device, qp, quality, profile, level,
 +	     bitrate, enc->context->gop_size,
 +	     enc->context->width, enc->context->height,
 +	     enc->context->max_b_frames,lfl,lfs);
 +
-+	return vaapi_init_codec(enc);
++	return vaapi_init_codec(enc, device);
 +}
 +
 +static void vaapi_destroy(void *data)
@@ -581,7 +582,7 @@ index 00000000..c46967fd
 +	char path[128] = "/dev/dri/renderD1";
 +	for (int i = 28;; i++) {
 +		sprintf(path, "/dev/dri/renderD1%d", i);
-+		if (access(path, F_OK) == 0) {			
++		if (access(path, F_OK) == 0) {
 +			char card[128] = "Card: ";
 +			sprintf(card, "Card%d: %s", i-28, path);
 +			obs_property_list_add_string(list, card, path);
